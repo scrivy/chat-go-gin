@@ -15,27 +15,51 @@ func main() {
     }
 }
 
-var wsupgrader = websocket.Upgrader{
-    ReadBufferSize:  1024,
-    WriteBufferSize: 1024,
-    CheckOrigin: func(r *http.Request) bool {
-        return true
-    },
-}
+var (
+    wsupgrader = websocket.Upgrader{
+        ReadBufferSize:  1024,
+        WriteBufferSize: 1024,
+        CheckOrigin: func(r *http.Request) bool {
+            return true
+        },
+    }
+    nextConnId int = 0
+    clients = make(map[int]*websocket.Conn)
+)
 
 func wshandler(w http.ResponseWriter, r *http.Request) {
-    conn, err := wsupgrader.Upgrade(w, r, nil)
+    ws, err := wsupgrader.Upgrade(w, r, nil)
     if err != nil {
         fmt.Println("Failed to set websocket upgrade: %+v", err)
         return
     }
 
+    clients[nextConnId] = ws;
+    nextConnId++
+    broadcastClientCount()
     for {
-        t, msg, err := conn.ReadMessage()
+        t, msg, err := ws.ReadMessage()
         if err != nil {
             break
         }
-        conn.WriteMessage(t, msg)
+        ws.WriteMessage(t, msg)
     }
 
 }
+
+type clientCountMessage struct {
+    Action string `json:"action"`
+    Data int `json:"data"`
+}
+
+func broadcastClientCount() {
+    message := clientCountMessage{"clientcount", len(clients)}
+    for _, ws := range clients {
+        ws.WriteJSON(message)
+    }
+}
+
+
+
+
+
