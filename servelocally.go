@@ -1,12 +1,12 @@
 package main
 
 import (
-    "net/http"
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-    router := gin.Default()
-    router.ServeFiles("/*filepath", http.Dir("public"))
-    router.Run(":8000")
+	r := gin.Default()
+	r.Use(static.Serve("/", static.LocalFile("./public", false)))
+	r.Run(":8000")
 }
